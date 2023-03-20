@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "basics": [],
+    "steps": [
+      {
+        "name": "sqlServerConfig",
+        "label": "SQL Server settings",
+        "elements": [
+          {
+            "name": "sqlServerAdminName",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Server admin login",
+            "placeholder": "protect-admin-username",
+            "toolTip": "The admin login name of the SQL server.",
+            "constraints": {
+              "required": true,
+              "regex": "^[a-z0-9A-Z-]{1,30}$",
+              "validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+            },
+            "visible": true
+          },
+          {
+            "name": "sqlServerAdminPassword",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": {
+              "password": "Password",
+              "confirmPassword": "Confirm password"
+            },
+            "toolTip": "The admin login password of the SQL server",
+            "constraints": {
+              "required": true,
+              "regex": "^(?=.*[A-Z])(?=.*[.!@#$%^&*()-_=+])(?=.*[0-9])(?=.*[a-z]).{12,128}$",
+              "validationMessage": "The password must be alphanumeric, contain at least 8 characters, and have at least 1 letter, 1 number and 1 non-alphanumeric."
+            },
+            "options": {
+              "hideConfirmation": false
+            },
+            "visible": true
+          }
+        ]
+      },
+      {
+        "name": "aksConfig",
+        "label": "AKS settings",
+        "elements": [
+          {
+            "name": "aksClusterAdminUsername",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Kubernetes cluster admin username",
+            "placeholder": "protect-aks",
+            "toolTip": "The name of the Azure Kubernetes Service cluster admin user.",
+            "constraints": {
+              "required": true,
+              "regex": "^[a-z0-9A-Z-]{1,30}$",
+              "validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+            },
+            "visible": true
+          },
+          {
+            "name": "aksClusterSshPublicKey",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Kubernetes cluster admin SSH pubkey",
+            "placeholder": "ssh-rsa ....",
+            "toolTip": "The SSH pubkey of the Azure Kubernetes Service cluster admin user.",
+            "constraints": {
+              "required": true,
+              "regex": "^(?=.*[A-Z])(?=.*[.!@#$%^&*()-_=+])(?=.*[0-9])(?=.*[a-z]).{12,600}$",
+              "validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+            },
+            "visible": true
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "location": "[location()]",
+      "sqlServerAdminName": "[steps('sqlServerConfig').sqlServerAdminName]",
+      "sqlServerAdminPassword": "[steps('sqlServerConfig').sqlServerAdminPassword.password]",
+      "aksClusterAdminUsername": "[steps('aksConfig').aksClusterAdminUsername]",
+      "aksClusterSshPublicKey": "[steps('aksConfig').aksClusterSshPublicKey]"
+    }
+  }
+}

@@ -1,0 +1,1284 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.15.31.15270",
+      "templateHash": "10249472033543356335"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location of AKS cluster."
+      }
+    },
+    "aksClusterName": {
+      "type": "string",
+      "defaultValue": "[format('aks-{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Specifies the name of the AKS cluster."
+      }
+    },
+    "aksClusterDnsPrefix": {
+      "type": "string",
+      "defaultValue": "[parameters('aksClusterName')]",
+      "metadata": {
+        "description": "Specifies the DNS prefix specified when creating the managed cluster."
+      }
+    },
+    "aksClusterTags": {
+      "type": "object",
+      "defaultValue": {
+        "resourceType": "AKS Cluster",
+        "createdBy": "ARM Template"
+      },
+      "metadata": {
+        "description": "Specifies the tags of the AKS cluster."
+      }
+    },
+    "aksClusterNetworkPlugin": {
+      "type": "string",
+      "defaultValue": "azure",
+      "allowedValues": [
+        "azure",
+        "kubenet"
+      ],
+      "metadata": {
+        "description": "Specifies the network plugin used for building Kubernetes network. - azure or kubenet."
+      }
+    },
+    "aksClusterNetworkPolicy": {
+      "type": "string",
+      "defaultValue": "azure",
+      "allowedValues": [
+        "azure",
+        "calico"
+      ],
+      "metadata": {
+        "description": "Specifies the network policy used for building Kubernetes network. - calico or azure"
+      }
+    },
+    "aksClusterPodCidr": {
+      "type": "string",
+      "defaultValue": "10.244.0.0/16",
+      "metadata": {
+        "description": "Specifies the CIDR notation IP range from which to assign pod IPs when kubenet is used."
+      }
+    },
+    "aksClusterServiceCidr": {
+      "type": "string",
+      "defaultValue": "10.2.0.0/16",
+      "metadata": {
+        "description": "A CIDR notation IP range from which to assign service cluster IPs. It must not overlap with any Subnet IP ranges."
+      }
+    },
+    "aksClusterDnsServiceIP": {
+      "type": "string",
+      "defaultValue": "10.2.0.10",
+      "metadata": {
+        "description": "Specifies the IP address assigned to the Kubernetes DNS service. It must be within the Kubernetes service address range specified in serviceCidr."
+      }
+    },
+    "aksClusterDockerBridgeCidr": {
+      "type": "string",
+      "defaultValue": "172.17.0.1/16",
+      "metadata": {
+        "description": "Specifies the CIDR notation IP range assigned to the Docker bridge network. It must not overlap with any Subnet IP ranges or the Kubernetes service address range."
+      }
+    },
+    "aksClusterLoadBalancerSku": {
+      "type": "string",
+      "defaultValue": "standard",
+      "allowedValues": [
+        "basic",
+        "standard"
+      ],
+      "metadata": {
+        "description": "Specifies the sku of the load balancer used by the virtual machine scale sets used by nodepools."
+      }
+    },
+    "aksClusterSkuTier": {
+      "type": "string",
+      "defaultValue": "Paid",
+      "allowedValues": [
+        "Paid",
+        "Free"
+      ],
+      "metadata": {
+        "description": "Specifies the tier of a managed cluster SKU: Paid or Free"
+      }
+    },
+    "aksClusterKubernetesVersion": {
+      "type": "string",
+      "defaultValue": "1.24.9",
+      "metadata": {
+        "description": "Specifies the version of Kubernetes specified when creating the managed cluster."
+      }
+    },
+    "aksClusterAdminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the administrator username of Linux virtual machines."
+      }
+    },
+    "aksClusterSshPublicKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the SSH RSA public key string for the Linux nodes."
+      }
+    },
+    "aadEnabled": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specifies whether enabling AAD integration."
+      }
+    },
+    "aadProfileTenantId": {
+      "type": "string",
+      "defaultValue": "[subscription().tenantId]",
+      "metadata": {
+        "description": "Specifies the tenant id of the Azure Active Directory used by the AKS cluster for authentication."
+      }
+    },
+    "aadProfileAdminGroupObjectIDs": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Specifies the AAD group object IDs that will have admin role of the cluster."
+      }
+    },
+    "aksClusterEnablePrivateCluster": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specifies whether to create the cluster as a private cluster or not."
+      }
+    },
+    "aadProfileManaged": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specifies whether to enable managed AAD integration."
+      }
+    },
+    "aadProfileEnableAzureRBAC": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specifies whether to  to enable Azure RBAC for Kubernetes authorization."
+      }
+    },
+    "nodePoolName": {
+      "type": "string",
+      "defaultValue": "nodepool1",
+      "metadata": {
+        "description": "Specifies the unique name of the node pool profile in the context of the subscription and resource group."
+      }
+    },
+    "nodePoolVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4s_v3",
+      "metadata": {
+        "description": "Specifies the vm size of nodes in the node pool."
+      }
+    },
+    "nodePoolOsDiskSizeGB": {
+      "type": "int",
+      "defaultValue": 100,
+      "metadata": {
+        "description": "Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in this master/agent pool. If you specify 0, it will apply the default osDisk size according to the vmSize specified.."
+      }
+    },
+    "nodePoolCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Specifies the number of agents (VMs) to host docker containers. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1."
+      }
+    },
+    "nodePoolOsType": {
+      "type": "string",
+      "defaultValue": "Linux",
+      "allowedValues": [
+        "Linux",
+        "Windows"
+      ],
+      "metadata": {
+        "description": "Specifies the OS type for the vms in the node pool. Choose from Linux and Windows. Default to Linux."
+      }
+    },
+    "nodePoolMaxPods": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "Specifies the maximum number of pods that can run on a node. The maximum number of pods per node in an AKS cluster is 250. The default maximum number of pods per node varies between kubenet and Azure CNI networking, and the method of cluster deployment."
+      }
+    },
+    "nodePoolMaxCount": {
+      "type": "int",
+      "defaultValue": 5,
+      "metadata": {
+        "description": "Specifies the maximum number of nodes for auto-scaling for the node pool."
+      }
+    },
+    "nodePoolMinCount": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "Specifies the minimum number of nodes for auto-scaling for the node pool."
+      }
+    },
+    "nodePoolEnableAutoScaling": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Specifies whether to enable auto-scaling for the node pool."
+      }
+    },
+    "nodePoolScaleSetPriority": {
+      "type": "string",
+      "defaultValue": "Regular",
+      "allowedValues": [
+        "Spot",
+        "Regular"
+      ],
+      "metadata": {
+        "description": "Specifies the virtual machine scale set priority: Spot or Regular."
+      }
+    },
+    "nodePoolNodeLabels": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Specifies the Agent pool node labels to be persisted across all nodes in agent pool."
+      }
+    },
+    "nodePoolNodeTaints": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule. - string"
+      }
+    },
+    "nodePoolMode": {
+      "type": "string",
+      "defaultValue": "System",
+      "allowedValues": [
+        "System",
+        "User"
+      ],
+      "metadata": {
+        "description": "Specifies the mode of an agent pool: System or User"
+      }
+    },
+    "nodePoolType": {
+      "type": "string",
+      "defaultValue": "VirtualMachineScaleSets",
+      "allowedValues": [
+        "VirtualMachineScaleSets",
+        "AvailabilitySet"
+      ],
+      "metadata": {
+        "description": "Specifies the type of a node pool: VirtualMachineScaleSets or AvailabilitySet"
+      }
+    },
+    "nodePoolAvailabilityZones": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Specifies the availability zones for nodes. Requirese the use of VirtualMachineScaleSets as node pool type."
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-vnet', parameters('aksClusterName'))]",
+      "metadata": {
+        "description": "Specifies the name of the virtual network."
+      }
+    },
+    "virtualNetworkAddressPrefixes": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/8",
+      "metadata": {
+        "description": "Specifies the address prefixes of the virtual network."
+      }
+    },
+    "aksSubnetName": {
+      "type": "string",
+      "defaultValue": "aks-subnet",
+      "metadata": {
+        "description": "Specifies the name of the default subnet hosting the AKS cluster."
+      }
+    },
+    "aksSubnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Specifies the address prefix of the subnet hosting the AKS cluster."
+      }
+    },
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-sql', parameters('aksClusterName'))]",
+      "metadata": {
+        "description": "The name of the SQL logical server."
+      }
+    },
+    "sqlServerAdminName": {
+      "type": "string",
+      "metadata": {
+        "description": "The SQL server admin user name."
+      }
+    },
+    "sqlServerAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password of the SQL server admin user."
+      }
+    },
+    "sqlServerValidatordDbName": {
+      "type": "string",
+      "defaultValue": "tg-validatord",
+      "metadata": {
+        "description": "The name of the tg-validatord SQL Database."
+      }
+    },
+    "sqlServerCapitaldDbName": {
+      "type": "string",
+      "defaultValue": "tg-capitald",
+      "metadata": {
+        "description": "The name of the tg-capitald SQL Database."
+      }
+    },
+    "tpUriScript": {
+      "type": "string",
+      "defaultValue": "https://taurusprotect.blob.core.windows.net/app/deploy.sh",
+      "metadata": {
+        "description": "The URI where the Taurus-PROTECT deployment script is."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-aks', uniqueString(resourceGroup().id))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "aadEnabled": {
+            "value": "[parameters('aadEnabled')]"
+          },
+          "aadProfileAdminGroupObjectIDs": {
+            "value": "[parameters('aadProfileAdminGroupObjectIDs')]"
+          },
+          "aadProfileEnableAzureRBAC": {
+            "value": "[parameters('aadProfileEnableAzureRBAC')]"
+          },
+          "aadProfileManaged": {
+            "value": "[parameters('aadProfileManaged')]"
+          },
+          "aadProfileTenantId": {
+            "value": "[parameters('aadProfileTenantId')]"
+          },
+          "aksClusterAdminUsername": {
+            "value": "[parameters('aksClusterAdminUsername')]"
+          },
+          "aksClusterDnsPrefix": {
+            "value": "[parameters('aksClusterDnsPrefix')]"
+          },
+          "aksClusterDnsServiceIP": {
+            "value": "[parameters('aksClusterDnsServiceIP')]"
+          },
+          "aksClusterDockerBridgeCidr": {
+            "value": "[parameters('aksClusterDockerBridgeCidr')]"
+          },
+          "aksClusterEnablePrivateCluster": {
+            "value": "[parameters('aksClusterEnablePrivateCluster')]"
+          },
+          "aksClusterKubernetesVersion": {
+            "value": "[parameters('aksClusterKubernetesVersion')]"
+          },
+          "aksClusterLoadBalancerSku": {
+            "value": "[parameters('aksClusterLoadBalancerSku')]"
+          },
+          "aksClusterName": {
+            "value": "[parameters('aksClusterName')]"
+          },
+          "aksClusterNetworkPlugin": {
+            "value": "[parameters('aksClusterNetworkPlugin')]"
+          },
+          "aksClusterNetworkPolicy": {
+            "value": "[parameters('aksClusterNetworkPolicy')]"
+          },
+          "aksClusterPodCidr": {
+            "value": "[parameters('aksClusterPodCidr')]"
+          },
+          "aksClusterServiceCidr": {
+            "value": "[parameters('aksClusterServiceCidr')]"
+          },
+          "aksClusterSkuTier": {
+            "value": "[parameters('aksClusterSkuTier')]"
+          },
+          "aksClusterSshPublicKey": {
+            "value": "[parameters('aksClusterSshPublicKey')]"
+          },
+          "aksClusterTags": {
+            "value": "[parameters('aksClusterTags')]"
+          },
+          "nodePoolAvailabilityZones": {
+            "value": "[parameters('nodePoolAvailabilityZones')]"
+          },
+          "nodePoolCount": {
+            "value": "[parameters('nodePoolCount')]"
+          },
+          "nodePoolEnableAutoScaling": {
+            "value": "[parameters('nodePoolEnableAutoScaling')]"
+          },
+          "nodePoolMaxCount": {
+            "value": "[parameters('nodePoolMaxCount')]"
+          },
+          "nodePoolMaxPods": {
+            "value": "[parameters('nodePoolMaxPods')]"
+          },
+          "nodePoolMinCount": {
+            "value": "[parameters('nodePoolMinCount')]"
+          },
+          "nodePoolMode": {
+            "value": "[parameters('nodePoolMode')]"
+          },
+          "nodePoolName": {
+            "value": "[parameters('nodePoolName')]"
+          },
+          "nodePoolNodeLabels": {
+            "value": "[parameters('nodePoolNodeLabels')]"
+          },
+          "nodePoolNodeTaints": {
+            "value": "[parameters('nodePoolNodeTaints')]"
+          },
+          "nodePoolOsDiskSizeGB": {
+            "value": "[parameters('nodePoolOsDiskSizeGB')]"
+          },
+          "nodePoolOsType": {
+            "value": "[parameters('nodePoolOsType')]"
+          },
+          "nodePoolScaleSetPriority": {
+            "value": "[parameters('nodePoolScaleSetPriority')]"
+          },
+          "nodePoolType": {
+            "value": "[parameters('nodePoolType')]"
+          },
+          "nodePoolVmSize": {
+            "value": "[parameters('nodePoolVmSize')]"
+          },
+          "virtualNetworkName": {
+            "value": "[parameters('virtualNetworkName')]"
+          },
+          "virtualNetworkAddressPrefixes": {
+            "value": "[parameters('virtualNetworkAddressPrefixes')]"
+          },
+          "aksSubnetName": {
+            "value": "[parameters('aksSubnetName')]"
+          },
+          "aksSubnetAddressPrefix": {
+            "value": "[parameters('aksSubnetAddressPrefix')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.15.31.15270",
+              "templateHash": "2340891009555229991"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Specifies the location of AKS cluster."
+              }
+            },
+            "aksClusterName": {
+              "type": "string",
+              "defaultValue": "[format('aks-{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "Specifies the name of the AKS cluster."
+              }
+            },
+            "aksClusterDnsPrefix": {
+              "type": "string",
+              "defaultValue": "[parameters('aksClusterName')]",
+              "metadata": {
+                "description": "Specifies the DNS prefix specified when creating the managed cluster."
+              }
+            },
+            "aksClusterTags": {
+              "type": "object",
+              "defaultValue": {
+                "resourceType": "AKS Cluster",
+                "createdBy": "ARM Template"
+              },
+              "metadata": {
+                "description": "Specifies the tags of the AKS cluster."
+              }
+            },
+            "aksClusterNetworkPlugin": {
+              "type": "string",
+              "defaultValue": "azure",
+              "allowedValues": [
+                "azure",
+                "kubenet"
+              ],
+              "metadata": {
+                "description": "Specifies the network plugin used for building Kubernetes network. - azure or kubenet."
+              }
+            },
+            "aksClusterNetworkPolicy": {
+              "type": "string",
+              "defaultValue": "azure",
+              "allowedValues": [
+                "azure",
+                "calico"
+              ],
+              "metadata": {
+                "description": "Specifies the network policy used for building Kubernetes network. - calico or azure"
+              }
+            },
+            "aksClusterPodCidr": {
+              "type": "string",
+              "defaultValue": "10.244.0.0/16",
+              "metadata": {
+                "description": "Specifies the CIDR notation IP range from which to assign pod IPs when kubenet is used."
+              }
+            },
+            "aksClusterServiceCidr": {
+              "type": "string",
+              "defaultValue": "10.2.0.0/16",
+              "metadata": {
+                "description": "A CIDR notation IP range from which to assign service cluster IPs. It must not overlap with any Subnet IP ranges."
+              }
+            },
+            "aksClusterDnsServiceIP": {
+              "type": "string",
+              "defaultValue": "10.2.0.10",
+              "metadata": {
+                "description": "Specifies the IP address assigned to the Kubernetes DNS service. It must be within the Kubernetes service address range specified in serviceCidr."
+              }
+            },
+            "aksClusterDockerBridgeCidr": {
+              "type": "string",
+              "defaultValue": "172.17.0.1/16",
+              "metadata": {
+                "description": "Specifies the CIDR notation IP range assigned to the Docker bridge network. It must not overlap with any Subnet IP ranges or the Kubernetes service address range."
+              }
+            },
+            "aksClusterLoadBalancerSku": {
+              "type": "string",
+              "defaultValue": "standard",
+              "allowedValues": [
+                "basic",
+                "standard"
+              ],
+              "metadata": {
+                "description": "Specifies the sku of the load balancer used by the virtual machine scale sets used by nodepools."
+              }
+            },
+            "aksClusterSkuTier": {
+              "type": "string",
+              "defaultValue": "Paid",
+              "allowedValues": [
+                "Paid",
+                "Free"
+              ],
+              "metadata": {
+                "description": "Specifies the tier of a managed cluster SKU: Paid or Free"
+              }
+            },
+            "aksClusterKubernetesVersion": {
+              "type": "string",
+              "defaultValue": "1.24.9",
+              "metadata": {
+                "description": "Specifies the version of Kubernetes specified when creating the managed cluster."
+              }
+            },
+            "aksClusterAdminUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the administrator username of Linux virtual machines."
+              }
+            },
+            "aksClusterSshPublicKey": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the SSH RSA public key string for the Linux nodes."
+              }
+            },
+            "aadEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether enabling AAD integration."
+              }
+            },
+            "aadProfileTenantId": {
+              "type": "string",
+              "defaultValue": "[subscription().tenantId]",
+              "metadata": {
+                "description": "Specifies the tenant id of the Azure Active Directory used by the AKS cluster for authentication."
+              }
+            },
+            "aadProfileAdminGroupObjectIDs": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Specifies the AAD group object IDs that will have admin role of the cluster."
+              }
+            },
+            "aksClusterEnablePrivateCluster": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether to create the cluster as a private cluster or not."
+              }
+            },
+            "aadProfileManaged": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether to enable managed AAD integration."
+              }
+            },
+            "aadProfileEnableAzureRBAC": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether to  to enable Azure RBAC for Kubernetes authorization."
+              }
+            },
+            "nodePoolName": {
+              "type": "string",
+              "defaultValue": "nodepool1",
+              "metadata": {
+                "description": "Specifies the unique name of the node pool profile in the context of the subscription and resource group."
+              }
+            },
+            "nodePoolVmSize": {
+              "type": "string",
+              "defaultValue": "Standard_D4s_v3",
+              "metadata": {
+                "description": "Specifies the vm size of nodes in the node pool."
+              }
+            },
+            "nodePoolOsDiskSizeGB": {
+              "type": "int",
+              "defaultValue": 100,
+              "metadata": {
+                "description": "Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in this master/agent pool. If you specify 0, it will apply the default osDisk size according to the vmSize specified.."
+              }
+            },
+            "nodePoolCount": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Specifies the number of agents (VMs) to host docker containers. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1."
+              }
+            },
+            "nodePoolOsType": {
+              "type": "string",
+              "defaultValue": "Linux",
+              "allowedValues": [
+                "Linux",
+                "Windows"
+              ],
+              "metadata": {
+                "description": "Specifies the OS type for the vms in the node pool. Choose from Linux and Windows. Default to Linux."
+              }
+            },
+            "nodePoolMaxPods": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "Specifies the maximum number of pods that can run on a node. The maximum number of pods per node in an AKS cluster is 250. The default maximum number of pods per node varies between kubenet and Azure CNI networking, and the method of cluster deployment."
+              }
+            },
+            "nodePoolMaxCount": {
+              "type": "int",
+              "defaultValue": 5,
+              "metadata": {
+                "description": "Specifies the maximum number of nodes for auto-scaling for the node pool."
+              }
+            },
+            "nodePoolMinCount": {
+              "type": "int",
+              "defaultValue": 3,
+              "metadata": {
+                "description": "Specifies the minimum number of nodes for auto-scaling for the node pool."
+              }
+            },
+            "nodePoolEnableAutoScaling": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable auto-scaling for the node pool."
+              }
+            },
+            "nodePoolScaleSetPriority": {
+              "type": "string",
+              "defaultValue": "Regular",
+              "allowedValues": [
+                "Spot",
+                "Regular"
+              ],
+              "metadata": {
+                "description": "Specifies the virtual machine scale set priority: Spot or Regular."
+              }
+            },
+            "nodePoolNodeLabels": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Specifies the Agent pool node labels to be persisted across all nodes in agent pool."
+              }
+            },
+            "nodePoolNodeTaints": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule. - string"
+              }
+            },
+            "nodePoolMode": {
+              "type": "string",
+              "defaultValue": "System",
+              "allowedValues": [
+                "System",
+                "User"
+              ],
+              "metadata": {
+                "description": "Specifies the mode of an agent pool: System or User"
+              }
+            },
+            "nodePoolType": {
+              "type": "string",
+              "defaultValue": "VirtualMachineScaleSets",
+              "allowedValues": [
+                "VirtualMachineScaleSets",
+                "AvailabilitySet"
+              ],
+              "metadata": {
+                "description": "Specifies the type of a node pool: VirtualMachineScaleSets or AvailabilitySet"
+              }
+            },
+            "nodePoolAvailabilityZones": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Specifies the availability zones for nodes. Requirese the use of VirtualMachineScaleSets as node pool type."
+              }
+            },
+            "virtualNetworkName": {
+              "type": "string",
+              "defaultValue": "[format('{0}-vnet', parameters('aksClusterName'))]",
+              "metadata": {
+                "description": "Specifies the name of the virtual network."
+              }
+            },
+            "virtualNetworkAddressPrefixes": {
+              "type": "string",
+              "defaultValue": "10.0.0.0/8",
+              "metadata": {
+                "description": "Specifies the address prefixes of the virtual network."
+              }
+            },
+            "aksSubnetName": {
+              "type": "string",
+              "defaultValue": "aks-subnet",
+              "metadata": {
+                "description": "Specifies the name of the default subnet hosting the AKS cluster."
+              }
+            },
+            "aksSubnetAddressPrefix": {
+              "type": "string",
+              "defaultValue": "10.0.0.0/16",
+              "metadata": {
+                "description": "Specifies the address prefix of the subnet hosting the AKS cluster."
+              }
+            }
+          },
+          "variables": {
+            "aadProfileConfiguration": {
+              "managed": "[parameters('aadProfileManaged')]",
+              "enableAzureRBAC": "[parameters('aadProfileEnableAzureRBAC')]",
+              "adminGroupObjectIDs": "[parameters('aadProfileAdminGroupObjectIDs')]",
+              "tenantID": "[parameters('aadProfileTenantId')]"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2022-07-01",
+              "name": "[parameters('virtualNetworkName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('virtualNetworkAddressPrefixes')]"
+                  ]
+                },
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+              }
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2022-07-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworkName'), parameters('aksSubnetName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('aksSubnetAddressPrefix')]",
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled",
+                "serviceEndpoints": [
+                  {
+                    "service": "Microsoft.Sql",
+                    "locations": [
+                      "[parameters('location')]"
+                    ]
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ContainerService/managedClusters",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('aksClusterName')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "tags": "[parameters('aksClusterTags')]",
+              "sku": {
+                "name": "Basic",
+                "tier": "[parameters('aksClusterSkuTier')]"
+              },
+              "properties": {
+                "kubernetesVersion": "[parameters('aksClusterKubernetesVersion')]",
+                "dnsPrefix": "[parameters('aksClusterDnsPrefix')]",
+                "agentPoolProfiles": [
+                  {
+                    "name": "[toLower(parameters('nodePoolName'))]",
+                    "count": "[parameters('nodePoolCount')]",
+                    "vmSize": "[parameters('nodePoolVmSize')]",
+                    "osDiskSizeGB": "[parameters('nodePoolOsDiskSizeGB')]",
+                    "vnetSubnetID": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('aksSubnetName'))]",
+                    "maxPods": "[parameters('nodePoolMaxPods')]",
+                    "osType": "[parameters('nodePoolOsType')]",
+                    "maxCount": "[parameters('nodePoolMaxCount')]",
+                    "minCount": "[parameters('nodePoolMinCount')]",
+                    "scaleSetPriority": "[parameters('nodePoolScaleSetPriority')]",
+                    "enableAutoScaling": "[parameters('nodePoolEnableAutoScaling')]",
+                    "mode": "[parameters('nodePoolMode')]",
+                    "type": "[parameters('nodePoolType')]",
+                    "availabilityZones": "[if(empty(parameters('nodePoolAvailabilityZones')), null(), parameters('nodePoolAvailabilityZones'))]",
+                    "nodeLabels": "[parameters('nodePoolNodeLabels')]",
+                    "nodeTaints": "[parameters('nodePoolNodeTaints')]"
+                  }
+                ],
+                "linuxProfile": {
+                  "adminUsername": "[parameters('aksClusterAdminUsername')]",
+                  "ssh": {
+                    "publicKeys": [
+                      {
+                        "keyData": "[parameters('aksClusterSshPublicKey')]"
+                      }
+                    ]
+                  }
+                },
+                "enableRBAC": true,
+                "networkProfile": {
+                  "networkPlugin": "[parameters('aksClusterNetworkPlugin')]",
+                  "networkPolicy": "[parameters('aksClusterNetworkPolicy')]",
+                  "podCidr": "[parameters('aksClusterPodCidr')]",
+                  "serviceCidr": "[parameters('aksClusterServiceCidr')]",
+                  "dnsServiceIP": "[parameters('aksClusterDnsServiceIP')]",
+                  "dockerBridgeCidr": "[parameters('aksClusterDockerBridgeCidr')]",
+                  "loadBalancerSku": "[parameters('aksClusterLoadBalancerSku')]"
+                },
+                "aadProfile": "[if(parameters('aadEnabled'), variables('aadProfileConfiguration'), null())]",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": "[parameters('aksClusterEnablePrivateCluster')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('aksSubnetName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "aksSubnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('aksSubnetName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-sql', uniqueString(resourceGroup().id))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "sqlServerName": {
+            "value": "[parameters('sqlServerName')]"
+          },
+          "sqlServerAdminName": {
+            "value": "[parameters('sqlServerAdminName')]"
+          },
+          "sqlServerAdminPassword": {
+            "value": "[parameters('sqlServerAdminPassword')]"
+          },
+          "sqlServerValidatordDbName": {
+            "value": "[parameters('sqlServerValidatordDbName')]"
+          },
+          "sqlServerCapitaldDbName": {
+            "value": "[parameters('sqlServerCapitaldDbName')]"
+          },
+          "aksSubnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-aks', uniqueString(resourceGroup().id))), '2020-10-01').outputs.aksSubnetId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.15.31.15270",
+              "templateHash": "13732390446067399069"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Specifies the location of SQL server."
+              }
+            },
+            "sqlServerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the SQL logical server."
+              }
+            },
+            "sqlServerAdminName": {
+              "type": "string",
+              "metadata": {
+                "description": "The SQL server admin user name."
+              }
+            },
+            "sqlServerAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "The password of the SQL server admin user."
+              }
+            },
+            "sqlServerValidatordDbName": {
+              "type": "string",
+              "defaultValue": "tg-validatord",
+              "metadata": {
+                "description": "The name of the tg-validatord SQL Database."
+              }
+            },
+            "sqlServerCapitaldDbName": {
+              "type": "string",
+              "defaultValue": "tg-capitald",
+              "metadata": {
+                "description": "The name of the tg-capitald SQL Database."
+              }
+            },
+            "aksSubnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the id of the default subnet hosting the AKS cluster nodes."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Sql/servers",
+              "apiVersion": "2022-05-01-preview",
+              "name": "[parameters('sqlServerName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "administratorLogin": "[parameters('sqlServerAdminName')]",
+                "administratorLoginPassword": "[parameters('sqlServerAdminPassword')]"
+              }
+            },
+            {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2022-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('sqlServerValidatordDbName'))]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2022-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('sqlServerCapitaldDbName'))]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/virtualNetworkRules",
+              "apiVersion": "2022-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), 'string')]",
+              "properties": {
+                "ignoreMissingVnetServiceEndpoint": true,
+                "virtualNetworkSubnetId": "[parameters('aksSubnetId')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/firewallRules",
+              "apiVersion": "2022-08-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), 'from_any')]",
+              "properties": {
+                "endIpAddress": "0.0.0.0",
+                "startIpAddress": "0.0.0.0"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "sqlServerFullyQualifiedDomainName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('sqlServerName')), '2022-05-01-preview').fullyQualifiedDomainName]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', format('{0}-aks', uniqueString(resourceGroup().id)))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-deploy', uniqueString(resourceGroup().id))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "aksClusterName": {
+            "value": "[parameters('aksClusterName')]"
+          },
+          "tpUriScript": {
+            "value": "[parameters('tpUriScript')]"
+          },
+          "sqlServerFullyQualifiedDomainName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-sql', uniqueString(resourceGroup().id))), '2020-10-01').outputs.sqlServerFullyQualifiedDomainName.value]"
+          },
+          "sqlServerAdminName": {
+            "value": "[parameters('sqlServerAdminName')]"
+          },
+          "sqlServerAdminPassword": {
+            "value": "[parameters('sqlServerAdminPassword')]"
+          },
+          "sqlServerValidatordDbName": {
+            "value": "[parameters('sqlServerValidatordDbName')]"
+          },
+          "sqlServerCapitaldDbName": {
+            "value": "[parameters('sqlServerCapitaldDbName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.15.31.15270",
+              "templateHash": "10728393551854885737"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the location of SQL server."
+              }
+            },
+            "aksClusterName": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the name of the AKS cluster."
+              }
+            },
+            "tpUriScript": {
+              "type": "string",
+              "metadata": {
+                "description": "The URI where the Taurus-PROTECT deployment script is."
+              }
+            },
+            "sqlServerFullyQualifiedDomainName": {
+              "type": "string",
+              "metadata": {
+                "description": "The SQl server FQDN"
+              }
+            },
+            "sqlServerAdminName": {
+              "type": "string",
+              "metadata": {
+                "description": "The SQL server admin user name."
+              }
+            },
+            "sqlServerAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "The password of the SQL server admin user."
+              }
+            },
+            "sqlServerValidatordDbName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the tg-validatord SQL Database."
+              }
+            },
+            "sqlServerCapitaldDbName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the tg-capitald SQL Database."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2022-01-31-preview",
+              "name": "[format('{0}-uai', parameters('aksClusterName'))]",
+              "location": "[parameters('location')]"
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id)]",
+              "properties": {
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-uai', parameters('aksClusterName'))), '2022-01-31-preview').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-uai', parameters('aksClusterName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-ds', parameters('aksClusterName'))]",
+              "location": "[parameters('location')]",
+              "kind": "AzureCLI",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-uai', parameters('aksClusterName'))))]": {}
+                }
+              },
+              "properties": {
+                "azCliVersion": "2.42.0",
+                "timeout": "PT30M",
+                "primaryScriptUri": "[parameters('tpUriScript')]",
+                "cleanupPreference": "OnExpiration",
+                "retentionInterval": "P1D",
+                "environmentVariables": [
+                  {
+                    "name": "RESOURCEGROUP",
+                    "value": "[resourceGroup().name]"
+                  },
+                  {
+                    "name": "CLUSTER_NAME",
+                    "value": "[parameters('aksClusterName')]"
+                  },
+                  {
+                    "name": "SQL_SERVER_FQDN",
+                    "value": "[parameters('sqlServerFullyQualifiedDomainName')]"
+                  },
+                  {
+                    "name": "SQL_SERVER_ADMIN_NAME",
+                    "value": "[parameters('sqlServerAdminName')]"
+                  },
+                  {
+                    "name": "SQL_SERVER_ADMIN_PASSWORD",
+                    "secureValue": "[parameters('sqlServerAdminPassword')]"
+                  },
+                  {
+                    "name": "SQL_SERVER_VALIDATORD_DB_NAME",
+                    "value": "[parameters('sqlServerValidatordDbName')]"
+                  },
+                  {
+                    "name": "SQL_SERVER_CAPITALD_DB_NAME",
+                    "value": "[parameters('sqlServerCapitaldDbName')]"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Authorization/roleAssignments', guid(resourceGroup().id))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-uai', parameters('aksClusterName')))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', format('{0}-aks', uniqueString(resourceGroup().id)))]",
+        "[resourceId('Microsoft.Resources/deployments', format('{0}-sql', uniqueString(resourceGroup().id)))]"
+      ]
+    }
+  ]
+}
